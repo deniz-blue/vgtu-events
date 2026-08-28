@@ -16,7 +16,7 @@ export const DEFAULT_FETCH_BUDGET = 40;
  * they were built by, so a bump makes every one of them stale and the cron
  * rewrites the catalogue over the following passes.
  */
-export const BUILD = 2;
+export const BUILD = 3;
 
 const FETCH_CONCURRENCY = 6;
 

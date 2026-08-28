@@ -19,13 +19,26 @@ export const stripTags = (html: string): string =>
 		.replace(/\s+/g, " ")
 		.trim();
 
-/** CommonMark ignores an emphasis marker padded with whitespace, so it moves outside. */
+/**
+ * Attribute values reach here in either quote style: EventON's descriptions are
+ * rewritten to single quotes so their JSON-LD parses at all.
+ */
+const attribute = (tag: string, name: string): string | undefined =>
+	new RegExp(`\\s${name}=(["'])([^>]*?)\\1`, "i").exec(tag)?.[2];
+
+/**
+ * Whitespace at the edges of an inline span belongs outside its markers —
+ * CommonMark ignores a padded emphasis marker entirely.
+ */
+const hoist = (inner: string, wrap: (core: string) => string): string => {
+	const [, lead = "", core = "", trail = ""] = /^(\s*)([\s\S]*?)(\s*)$/.exec(inner) ?? [];
+	return core ? `${lead}${wrap(core)}${trail}` : `${lead}${trail}`;
+};
+
 const emphasise =
 	(marker: string) =>
-	(_match: string, _tag: string, inner: string): string => {
-		const [, lead = "", core = "", trail = ""] = /^(\s*)([\s\S]*?)(\s*)$/.exec(inner) ?? [];
-		return core ? `${lead}${marker}${core}${marker}${trail}` : `${lead}${trail}`;
-	};
+	(_match: string, _tag: string, inner: string): string =>
+		hoist(inner, (core) => `${marker}${core}${marker}`);
 
 /**
  * Descriptions arrive as HTML but land in a markdown component, so the structure
@@ -42,9 +55,14 @@ export const toMarkdown = (html: string): string =>
 			.replace(/<\/h[1-6]>/gi, "\n\n")
 			.replace(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>/gi, emphasise("**"))
 			.replace(/<(em|i)\b[^>]*>([\s\S]*?)<\/\1>/gi, emphasise("*"))
-			.replace(/<img[^>]*\salt="([^"]*)"[^>]*\ssrc="([^"]*)"[^>]*>/gi, "![$1]($2)")
-			.replace(/<img[^>]*\ssrc="([^"]*)"[^>]*>/gi, "![]($1)")
-			.replace(/<a[^>]*\shref="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, "[$2]($1)")
+			.replace(/<img[^>]*>/gi, (tag) => {
+				const source = attribute(tag, "src");
+				return source ? `![${attribute(tag, "alt") ?? ""}](${source})` : "";
+			})
+			.replace(/<a[^>]*>([\s\S]*?)<\/a>/gi, (tag, label: string) => {
+				const href = attribute(tag, "href");
+				return hoist(label, (core) => (href ? `[${core}](${href})` : core));
+			})
 			.replace(/<[^>]+>/g, ""),
 	)
 		.replace(/[ \t]+/g, " ")
