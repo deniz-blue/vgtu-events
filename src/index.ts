@@ -1,6 +1,7 @@
 import "temporal-polyfill-lite/global";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { isAuthorised } from "./auth";
 import { TAGS_COMPONENT_TYPE } from "./convert";
 import { eventTimeSpan, type TimeSpan } from "./dates";
 import { toJsonFeed } from "./feed";
@@ -10,6 +11,8 @@ import { readEvents, writeEvents, type EventEntry } from "./storage";
 
 type Env = {
 	EVENTS: KVNamespace;
+	/** Bearer token for `POST /scrape`. Unset leaves the route closed. */
+	SCRAPE_TOKEN?: string;
 };
 
 const EVENT_CONTENT_TYPE = "application/evnt+json";
@@ -205,6 +208,12 @@ app.get("/status", async (c) => {
 });
 
 app.post("/scrape", async (c) => {
+	if (!(await isAuthorised(c.req.header("Authorization"), c.env.SCRAPE_TOKEN))) {
+		return c.json({ message: "A scrape needs a bearer token." }, 401, {
+			"WWW-Authenticate": 'Bearer realm="scrape"',
+		});
+	}
+
 	const requested = Number(c.req.query("limit"));
 	const budget = Number.isFinite(requested) && requested > 0 ? requested : DEFAULT_FETCH_BUDGET;
 

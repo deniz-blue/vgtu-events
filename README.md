@@ -50,8 +50,19 @@ is a genuine pair whose two posts were given different featured images.
 | `GET /e/{slug}.evnt.json` | Full Open Evnt event — `application/evnt+json`, ETagged |
 | `GET /feed.json` | JSON Feed 1.1 |
 | `GET /status` | Last scrape timestamp and stats |
-| `POST /scrape?limit=N` | Trigger a scrape (no auth) |
+| `POST /scrape?limit=N` | Trigger a scrape — requires `Authorization: Bearer $SCRAPE_TOKEN` |
 | CRON | Scrapes every 6 hours |
+
+`POST /scrape` is the one route that costs upstream requests, so it takes a bearer
+token held as a Worker secret:
+
+```bash
+pnpm wrangler secret put SCRAPE_TOKEN
+```
+
+The route stays closed while the secret is unset — an unconfigured deployment
+refuses every scrape rather than accepting any. The cron path does not go through
+it and is unaffected.
 
 ### Index query parameters
 
