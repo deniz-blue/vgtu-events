@@ -1,0 +1,11 @@
+name = "vgtu-events"
+main = "src/index.ts"
+compatibility_date = "2026-08-28"
+
+[triggers]
+crons = ["0 */6 * * *"]
+
+[[kv_namespaces]]
+binding = "EVENTS"
+id = "60c495f3fe3342598fa04231127b7d2c"
+preview_id = "f5eb0fb88d2042249669f7280a816954"
