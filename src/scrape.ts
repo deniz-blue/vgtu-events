@@ -11,6 +11,13 @@ import type { EventEntry, EventIndex, ScrapeFailure } from "./storage";
  */
 export const DEFAULT_FETCH_BUDGET = 40;
 
+/**
+ * Raise when the converter's output changes. Stored entries carry the revision
+ * they were built by, so a bump makes every one of them stale and the cron
+ * rewrites the catalogue over the following passes.
+ */
+export const BUILD = 2;
+
 const FETCH_CONCURRENCY = 6;
 
 export interface EventGroup {
@@ -116,7 +123,7 @@ const buildEntry = async (group: EventGroup, source: string, now: string): Promi
 	const data = toOpenEvnt({ cards: group.cards, details });
 	if (!data) throw new Error("no usable card");
 
-	return { data, source, etag: await sha256Hex(JSON.stringify(data)), updated: now };
+	return { data, source, build: BUILD, etag: await sha256Hex(JSON.stringify(data)), updated: now };
 };
 
 /** Nearest events first, so a cold start fills the landing page before the archive. */
@@ -151,7 +158,7 @@ export const scrape = async (
 
 		// Keep serving the previous copy until a rebuild succeeds.
 		if (existing) events[group.id] = existing;
-		if (existing?.source === source) continue;
+		if (existing?.source === source && existing.build === BUILD) continue;
 		stale.push({ group, source });
 	}
 

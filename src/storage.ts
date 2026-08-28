@@ -8,6 +8,8 @@ export interface EventEntry {
 	 * confined to the event's body text will not show up in it.
 	 */
 	source: string;
+	/** Converter revision this entry was produced by; a bump rebuilds every stored event. */
+	build: number;
 	/** SHA-256 of the serialised event, computed once so the index and the event route agree. */
 	etag: string;
 	updated: string;

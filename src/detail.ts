@@ -1,4 +1,4 @@
-import { decodeEntities, stripTags } from "./html";
+import { decodeEntities, stripTags, toMarkdown } from "./html";
 
 export interface EventDetail {
 	/** `HH:MM`, from the header's time range. */
@@ -45,22 +45,6 @@ const readHeader = (html: string): Pick<EventDetail, "startTime" | "endTime" | "
 
 	return result;
 };
-
-const toMarkdown = (html: string): string =>
-	decodeEntities(
-		html
-			.replace(/<br\s*\/?>/gi, "\n")
-			.replace(/<\/p>\s*<p[^>]*>/gi, "\n\n")
-			.replace(/<\/?p[^>]*>/gi, "\n\n")
-			.replace(/<(strong|b)>([\s\S]*?)<\/\1>/gi, "**$2**")
-			.replace(/<(em|i)>([\s\S]*?)<\/\1>/gi, "*$2*")
-			.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, "[$2]($1)")
-			.replace(/<li[^>]*>/gi, "\n- ")
-			.replace(/<[^>]+>/g, ""),
-	)
-		.replace(/[ \t]+/g, " ")
-		.replace(/\n{3,}/g, "\n\n")
-		.trim();
 
 /** An href arrives HTML-encoded, so a query string reads `&amp;` between its parameters. */
 const decodeUrl = (url: string | undefined): string | null => (url ? decodeEntities(url) : null);

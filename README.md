@@ -94,6 +94,11 @@ Because the cards are the only change signal, **an edit confined to an event's b
 text is not detected** — it is picked up whenever the card changes for another
 reason. There is no `modified_gmt` to do better with.
 
+Stored entries carry the converter revision (`BUILD`) they were produced by.
+Raising it makes every entry stale, so a change to the conversion rewrites the
+whole catalogue over the following cron passes instead of leaving old output in
+place until its source happens to change.
+
 ### Quirks handled
 
 - **Lazy-loaded images.** The card's `src` is a 1×1 data: placeholder and the real
