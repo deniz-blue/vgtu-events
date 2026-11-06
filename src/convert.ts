@@ -1,13 +1,12 @@
 import { EventBuilder } from "@evnt/builder";
-import { PartialDateUtil } from "@evnt/partial-date";
-import type { OpenEvnt, PartialDate } from "@evnt/types";
+import { PartialDate, type PartialDateString } from "@evnt/partial-date";
+import type { OpenEvnt, Translations } from "@evnt/types";
 import type { EventCard, Language } from "./listing";
 import type { EventDetail } from "./detail";
 
-export const TAGS_COMPONENT_TYPE = "lt.vilniustech.component.categories";
+export const TAGS_COMPONENT_TYPE = "lt.vilniustech.component.categories#0";
 
 const TIMEZONE = "Europe/Vilnius";
-const VENUE_ID = "vilniustech:0";
 
 /** An event as it exists in each language the site publishes it in. */
 export interface EventSources {
@@ -16,44 +15,44 @@ export interface EventSources {
 }
 
 /** `YYYYMMDD` plus an optional `HH:MM`, both as the site writes them. */
-const toPartialDate = (day: string, time: string | null): PartialDate => {
-	const fields = {
-		year: Number(day.slice(0, 4)),
-		month: Number(day.slice(4, 6)),
-		day: Number(day.slice(6, 8)),
-		timezone: TIMEZONE,
-	};
-
-	if (!time) return PartialDateUtil.format({ ...fields, precision: "day" });
+const toPartialDate = (day: string, time: string | null): PartialDateString => {
+	const year = Number(day.slice(0, 4));
+	const month = Number(day.slice(4, 6));
+	const date = Number(day.slice(6, 8));
+	if (!time) return new PartialDate.Day(year, month, date, TIMEZONE).toString();
 
 	const [hour, minute] = time.split(":");
-	return PartialDateUtil.format({
-		...fields,
-		hour: Number(hour),
-		minute: Number(minute),
-		precision: "time",
-	});
+	return new PartialDate.Time(year, month, date, Number(hour), Number(minute), TIMEZONE).toString();
 };
 
 const languagesOf = <T>(record: Partial<Record<Language, T>>): [Language, T][] =>
 	Object.entries(record).filter((entry): entry is [Language, T] => entry[1] !== undefined);
 
-export const toOpenEvnt = ({ cards, details }: EventSources): OpenEvnt | null => {
-	const primary = cards.lt ?? cards.en;
+export const primaryCardOf = ({ cards }: EventSources): EventCard | undefined =>
+	cards.lt ?? cards.en;
+
+const translationsOf = <T>(
+	record: Partial<Record<Language, T>>,
+	text: (value: T) => string | null | undefined,
+): Translations =>
+	Object.fromEntries(
+		languagesOf(record).flatMap(([language, value]) => {
+			const content = text(value);
+			return content ? [[language, content]] : [];
+		}),
+	);
+
+export const toOpenEvnt = (sources: EventSources, id: string): OpenEvnt | null => {
+	const { cards, details } = sources;
+	const primary = primaryCardOf(sources);
 	if (!primary) return null;
 
-	const builder = new EventBuilder();
+	const builder = new EventBuilder().setId(id);
 
 	for (const [language, card] of languagesOf(cards)) builder.setName(card.title, language);
 
-	const venueNames = languagesOf(details).filter(([, detail]) => detail.venue);
-	if (venueNames.length > 0) {
-		builder.addUnknownVenue((venue) => {
-			venue.setId(VENUE_ID);
-			for (const [language, detail] of venueNames) venue.setName(detail.venue!, language);
-			return venue;
-		});
-	}
+	const venueName = translationsOf(details, (detail) => detail.venue);
+	if (Object.keys(venueName).length > 0) builder.setVenue({ name: venueName });
 
 	// The header's time range describes the first and last day, not every day between.
 	const times = details.lt ?? details.en;
@@ -63,21 +62,20 @@ export const toOpenEvnt = ({ cards, details }: EventSources): OpenEvnt | null =>
 			? undefined
 			: toPartialDate(primary.dateTo, times?.endTime ?? times?.startTime ?? null);
 
-	builder.addInstance((instance) => {
-		instance.setStart(start);
-		if (end) instance.setEnd(end);
-		if (venueNames.length > 0) instance.addAllVenues();
-		return instance;
-	});
+	builder.addOccurrence(end ? { start, end } : { start });
+
+	const spokenLanguages = times?.spokenLanguages ?? [];
+	if (spokenLanguages.length > 0) {
+		builder.addCustomComponent({
+			$type: "directory.evnt.component.languages#0",
+			languages: spokenLanguages.map((code) => ({ code })),
+		});
+	}
 
 	if (primary.imageUrl) {
-		const alt = Object.fromEntries(
-			languagesOf(cards)
-				.filter(([, card]) => card.imageAlt)
-				.map(([language, card]) => [language, card.imageAlt!]),
-		);
+		const alt = translationsOf(cards, (card) => card.imageAlt);
 		builder.addCustomComponent({
-			$type: "directory.evnt.component.splashMedia",
+			$type: "directory.evnt.component.splashMedia#0",
 			roles: ["banner", "background"],
 			media: {
 				sources: [{ url: primary.imageUrl }],
@@ -86,16 +84,12 @@ export const toOpenEvnt = ({ cards, details }: EventSources): OpenEvnt | null =>
 		});
 	}
 
-	for (const [language, detail] of languagesOf(details)) {
-		if (!detail.description) continue;
-		builder.addCustomComponent({
-			$type: "directory.evnt.richtext.markdown",
-			content: detail.description,
-			language,
-		});
+	const description = translationsOf(details, (detail) => detail.description);
+	if (Object.keys(description).length > 0) {
+		builder.addCustomComponent({ $type: "directory.evnt.text.markdown#0", content: description });
 	}
 
-	builder.addCustomComponent({ $type: "directory.evnt.component.source", url: primary.url });
+	builder.addCustomComponent({ $type: "directory.evnt.component.source#0", url: primary.url });
 
 	for (const [language, card] of languagesOf(cards)) {
 		if (card.url !== primary.url)

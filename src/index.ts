@@ -41,8 +41,8 @@ interface ListedEvent {
 
 const spanOf = (entry: EventEntry): TimeSpan | null =>
 	eventTimeSpan(
-		(entry.data.instances ?? []).map((instance) => instance.start),
-		(entry.data.instances ?? []).map((instance) => instance.end),
+		(entry.data.occurrences ?? []).map((occurrence) => occurrence.start),
+		(entry.data.occurrences ?? []).map((occurrence) => occurrence.end),
 	);
 
 const listAll = async (kv: KVNamespace) => {

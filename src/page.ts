@@ -47,12 +47,12 @@ const renderEvent = (
 ): string => {
 	const eventUrl = `${origin}/e/${slug}.evnt.json`;
 	const openUrl = `${EVENTSLINK_BASE}?url=${encodeURIComponent(eventUrl)}`;
-	const where = preferred(entry.data.venues?.[0]?.name);
+	const where = preferred(entry.data.venue?.name);
 	const tags = tagsOf(entry);
 	const languages = Object.keys(entry.data.name).sort().join(" · ").toUpperCase();
 
 	return `<li class="event">
-	<div class="when">${escapeHtml(formatWhen(entry.data.instances?.[0]?.start, instant))}</div>
+	<div class="when">${escapeHtml(formatWhen(entry.data.occurrences?.[0]?.start, instant))}</div>
 	<div class="what">
 		<a class="name" href="${escapeHtml(openUrl)}">${escapeHtml(preferred(entry.data.name) ?? "Untitled")}</a>
 		<div class="meta">${where ? escapeHtml(where) : "Venue to be announced"}<span class="langs">${escapeHtml(languages)}</span></div>

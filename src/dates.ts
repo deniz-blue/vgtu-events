@@ -1,4 +1,4 @@
-import { PartialDateUtil } from "@evnt/partial-date";
+import { PartialDate as PartialDateValue } from "@evnt/partial-date";
 import type { PartialDate } from "@evnt/types";
 
 /** The span of real time a PartialDate covers, as epoch milliseconds. Both bounds are inclusive. */
@@ -8,11 +8,10 @@ export interface TimeSpan {
 }
 
 export const timeSpanOf = (value: string | undefined): TimeSpan | null => {
-	if (!value || !PartialDateUtil.isValid(value)) return null;
-	return {
-		start: PartialDateUtil.toInstant(value, "low").epochMilliseconds,
-		end: PartialDateUtil.toInstant(value, "high").epochMilliseconds,
-	};
+	if (!value || !PartialDateValue.isValid(value)) return null;
+	const date = PartialDateValue.from(value);
+	const start = date.startEpochMilliseconds;
+	return { start, end: Math.max(start, date.endEpochMilliseconds - 1) };
 };
 
 /**

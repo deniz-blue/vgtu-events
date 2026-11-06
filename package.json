@@ -11,10 +11,10 @@
 		"lint": "oxlint src"
 	},
 	"dependencies": {
-		"@evnt/builder": "^0.1.2",
-		"@evnt/partial-date": "^0.1.2",
-		"@evnt/pretty": "^0.1.2",
-		"@evnt/types": "^0.1.2",
+		"@evnt/builder": "^0.2.0",
+		"@evnt/partial-date": "^0.2.0",
+		"@evnt/pretty": "^0.2.0",
+		"@evnt/types": "^0.2.0",
 		"hono": "^4.7.0",
 		"temporal-polyfill-lite": "^0.4.2"
 	},

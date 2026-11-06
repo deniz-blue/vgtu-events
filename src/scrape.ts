@@ -1,6 +1,6 @@
-import { toOpenEvnt, type EventSources } from "./convert";
+import { primaryCardOf, toOpenEvnt, type EventSources } from "./convert";
 import { fetchDetail, type EventDetail } from "./detail";
-import { sha256Hex } from "./hash";
+import { sha256Hex, uuidOfUrl } from "./hash";
 import { fetchCards, type EventCard, type Language } from "./listing";
 import type { EventEntry, EventIndex, ScrapeFailure } from "./storage";
 
@@ -16,7 +16,7 @@ export const DEFAULT_FETCH_BUDGET = 40;
  * they were built by, so a bump makes every one of them stale and the cron
  * rewrites the catalogue over the following passes.
  */
-export const BUILD = 3;
+export const BUILD = 4;
 
 const FETCH_CONCURRENCY = 6;
 
@@ -120,7 +120,10 @@ const buildEntry = async (group: EventGroup, source: string, now: string): Promi
 		details[language] = detail as EventDetail;
 	}
 
-	const data = toOpenEvnt({ cards: group.cards, details });
+	const sources: EventSources = { cards: group.cards, details };
+	const primary = primaryCardOf(sources);
+	if (!primary) throw new Error("no usable card");
+	const data = toOpenEvnt(sources, `urn:uuid:${await uuidOfUrl(primary.url)}`);
 	if (!data) throw new Error("no usable card");
 
 	return { data, source, build: BUILD, etag: await sha256Hex(JSON.stringify(data)), updated: now };

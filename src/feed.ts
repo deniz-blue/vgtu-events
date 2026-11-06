@@ -1,5 +1,5 @@
 import type { OpenEvnt } from "@evnt/types";
-import { EmojiFormatter, PlainTextFormatter, defaultAnalyzeConfig } from "@evnt/pretty";
+import { EmojiFormatter, PlainTextFormatter } from "@evnt/pretty";
 import { timeSpanOf } from "./dates";
 
 interface JsonFeedItem {
@@ -22,15 +22,14 @@ export interface JsonFeed {
 
 const splashUrl = (event: OpenEvnt): string | undefined => {
 	const splash = event.components?.find(
-		(component) => component.$type === "directory.evnt.component.splashMedia",
+		(component) => component.$type === "directory.evnt.component.splashMedia#0",
 	) as { media?: { sources?: { url?: string }[] } } | undefined;
 	return splash?.media?.sources?.[0]?.url;
 };
 
 const formatter = new EmojiFormatter({
-	...PlainTextFormatter.defaults,
+	...PlainTextFormatter.defaultOptions,
 	...EmojiFormatter.emojiDefaults,
-	...defaultAnalyzeConfig,
 	language: "en",
 	timezone: "Europe/Vilnius",
 	showLinks: false,
@@ -46,7 +45,7 @@ export const toJsonFeed = (
 	feed_url: `${baseUrl}/feed.json`,
 	items: events.map(({ slug, event }) => {
 		// A PartialDate names a wall time in Vilnius, which is not the UTC reading of it.
-		const start = timeSpanOf(event.instances?.[0]?.start);
+		const start = timeSpanOf(event.occurrences?.[0]?.start);
 
 		return {
 			id: slug,

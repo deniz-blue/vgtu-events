@@ -10,7 +10,7 @@ Two listing pages and, per event, its own page:
 | Source | Supplies |
 |--------|----------|
 | `/universitetas/renginiai/` and `/en/university/events/` | The full catalogue, `data-datefrom`/`data-dateto`, the filter taxonomy and the featured image |
-| Each event's own page | The time range, the venue, the description and a registration link |
+| Each event's own page | The time range, the venue, the spoken languages, the description and a registration link |
 
 Everything is parsed out of rendered HTML. The site runs WordPress, but events are
 not a REST-exposed post type — `/wp-json/wp/v2/types` does not list one and the
@@ -114,14 +114,18 @@ place until its source happens to change.
 - Registration links are searched inside the article only; the site chrome links a
   form on every page.
 
-Each event carries an `lt.vilniustech.component.categories` component holding the
+Documents are Open Evnt 0.2. An event's `id` is `urn:uuid:` plus the version 5 UUID of
+its Lithuanian page URL (the English one when there is no Lithuanian page), so it stays
+the same across scrapes and does not depend on where the worker is deployed.
+
+Each event carries an `lt.vilniustech.component.categories#0` component holding the
 listing's filter slugs (`alumni`, `architekturos-fakultetas`, …), which have no
 representation in the core Open Evnt component set. The site publishes them as slugs
 rather than display names and exposes no lookup for them.
 
-Venues are `directory.evnt.venue.unknown`: the site gives one free-text line mixing
-name and address (*Lietuvos architektų sąjunga Vilniaus skyrius, Kalvarijų g. 1,
-Vilnius*) that cannot be split reliably.
+The venue is only a name: the site gives one free-text line mixing name and address
+(*Lietuvos architektų sąjunga Vilniaus skyrius, Kalvarijų g. 1, Vilnius*) that cannot
+be split reliably.
 
 ## Deploy
 
